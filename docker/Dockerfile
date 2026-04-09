@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpng16-16 \
         libjpeg62-turbo \
         binutils \
+    && ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so.62 /usr/lib/x86_64-linux-gnu/libjpeg.so.8 \
     && rm -rf /var/lib/apt/lists/*
 
 # CARLA 0.9.10 Python API egg を site-packages に追加
@@ -27,9 +28,10 @@ RUN SITE=$(python -c "import site; print(site.getsitepackages()[0])") && \
     echo "$(basename $EGG)" > "$SITE/carla.pth" && \
     rm -rf /tmp/carla_dist
 
-# 残りの不足共有ライブラリを確認（ビルド時のみ）
-RUN python -c "import carla; print('carla import OK')" 2>&1 || \
-    (ldd /usr/local/lib/python3.7/site-packages/carla-0.9.10-py3.7-linux-x86_64.egg/carla/libcarla.so 2>/dev/null | grep "not found" && exit 1)
+# 不足ライブラリを一覧表示してから import 確認
+RUN find /usr/local/lib/python3.7/site-packages/carla-0.9.10-py3.7-linux-x86_64.egg -name "*.so" \
+      -exec ldd {} \; 2>/dev/null | grep "not found" | sort -u && \
+    python -c "import carla; print('carla import OK')"
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
