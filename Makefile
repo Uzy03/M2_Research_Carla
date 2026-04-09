@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help init init-local data-dirs setup env \
+.PHONY: help init init-local data-dirs detect setup env \
         build-remote build-local \
         up down logs shell \
         phase1 phase2 phase3 run \
@@ -32,7 +32,7 @@ help:
 	@echo "  CARLA Counterfactual Dataset Framework"
 	@echo ""
 	@echo "  セットアップ（初回）"
-	@echo "    make init            .env作成 + data/ディレクトリ作成 + Dockerビルド（リモートLinux用）"
+	@echo "    make init            .env作成 + 接続情報自動検出 + data/作成 + Dockerビルド（リモートLinux用）"
 	@echo "    make init-local      同上（ローカル開発用）"
 	@echo "    make setup           .env を作成して依存ライブラリをインストール（pip）"
 	@echo "    make env             .env.example → .env をコピー（既存は上書きしない）"
@@ -71,9 +71,23 @@ help:
 	@echo ""
 
 # ── 初回セットアップ ─────────────────────────────────────
-init: env data-dirs build-remote
+init: env detect data-dirs build-remote
 	@echo "✅ 初回セットアップ完了（リモートLinux用）"
-	@echo "   .env を編集して REMOTE_HOST などを設定してください。"
+
+detect:
+	$(eval _USER := $(shell whoami))
+	$(eval _HOST := $(shell hostname -I | awk '{print $$1}'))
+	$(eval _DIR  := $(shell pwd))
+	@sed -i.bak \
+	    -e "s|^REMOTE_USER=.*|REMOTE_USER=$(_USER)|" \
+	    -e "s|^REMOTE_HOST=.*|REMOTE_HOST=$(_HOST)|" \
+	    -e "s|^REMOTE_DIR=.*|REMOTE_DIR=$(_DIR)|" \
+	    $(ENV_FILE)
+	@rm -f $(ENV_FILE).bak
+	@echo "🔍 検出結果を .env に反映しました:"
+	@echo "   REMOTE_USER=$(_USER)"
+	@echo "   REMOTE_HOST=$(_HOST)"
+	@echo "   REMOTE_DIR=$(_DIR)"
 
 init-local: env data-dirs build-local
 	@echo "✅ 初回セットアップ完了（ローカル開発用）"
