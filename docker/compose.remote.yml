@@ -24,15 +24,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-    command: >
-      /bin/bash -c "
-        ./CarlaUE4.sh
-        -RenderOffScreen
-        -nosound
-        -carla-server
-        -world-port=2000
-        -quality-level=${CARLA_QUALITY:-Epic}
-      "
+    command: /bin/bash -c "./CarlaUE4.sh -RenderOffScreen -nosound -carla-server -world-port=2000 -quality-level=${CARLA_QUALITY:-Epic}"
     ports:
       - "2000:2000"   # CARLA primary port
       - "2001:2001"   # CARLA secondary (traffic manager)
