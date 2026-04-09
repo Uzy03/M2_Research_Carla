@@ -1,0 +1,31 @@
+# 生成データ（大容量）
+data/
+
+# 環境設定（シークレット含む可能性）
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ログ
+*.log
+carla_framework.log
+team/copilot.log
+team/task.md
+team/report.md
+
+# macOS
+.DS_Store
+
+# Docker
+docker/volumes/
+
+# Claudecode
+.claude/
+CLAUDE.md
+REQUIREMENTS.md
+team/

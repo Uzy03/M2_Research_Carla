@@ -1,0 +1,7 @@
+carla==0.9.15
+numpy>=1.24.0,<2.0
+pandas>=2.0.0
+h5py>=3.9.0
+mplsoccer>=1.1.12
+matplotlib>=3.7.0
+paramiko>=3.3.0

@@ -1,0 +1,66 @@
+# Local — CARLA server + Python client on the same machine (no GPU required)
+#
+# macOS / Linux ローカル開発用。
+# CARLAサーバーを -RenderOffScreen + No-Rendering で起動するため GPU 不要。
+# Apple Silicon (M3) では Docker Desktop が linux/amd64 を Rosetta でエミュレート。
+#
+# Usage:
+#   make build-local
+#   make run-local
+
+name: carla-counterfactual-local
+
+services:
+  carla-server:
+    image: carlasim/carla:${CARLA_VERSION:-0.9.15}
+    platform: linux/amd64
+    command: >
+      /bin/bash -c "
+        ./CarlaUE4.sh
+        -RenderOffScreen
+        -nosound
+        -carla-server
+        -world-port=2000
+        -quality-level=Low
+      "
+    ports:
+      - "2000:2000"
+      - "2001:2001"
+    networks:
+      - carla-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+
+  client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    platform: linux/amd64
+    depends_on:
+      carla-server:
+        condition: service_healthy
+    environment:
+      - CARLA_HOST=carla-server
+      - CARLA_PORT=2000
+    command: >
+      --host carla-server
+      --port 2000
+      --phase ${RUN_PHASE:-all}
+      --num-train ${NUM_TRAIN:-10000}
+      --num-test  ${NUM_TEST:-2000}
+      --versions  ${NUM_VERSIONS:-10}
+    volumes:
+      - ../data:/app/data
+      - ../src:/app/src
+    networks:
+      - carla-net
+    restart: "no"
+
+networks:
+  carla-net:
+    driver: bridge

@@ -1,0 +1,83 @@
+# Remote Linux Server — CARLA server + Python client
+#
+# Prerequisites on the Linux host:
+#   - NVIDIA Driver >= 550
+#   - NVIDIA Container Toolkit (nvidia-docker2)
+#   - Docker Engine >= 24
+#
+# Usage:
+#   cp .env.example .env          # edit as needed
+#   docker compose -f docker/compose.remote.yml up
+#
+# To run only data collection (Phase 1):
+#   docker compose -f docker/compose.remote.yml run --rm client --phase 1 --num-train 100
+
+name: carla-counterfactual-remote
+
+services:
+  # -------------------------------------------------------
+  # CARLA Simulator (Unreal Engine 4, GPU rendering)
+  # -------------------------------------------------------
+  carla-server:
+    image: carlasim/carla:${CARLA_VERSION:-0.9.15}
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    command: >
+      /bin/bash -c "
+        ./CarlaUE4.sh
+        -RenderOffScreen
+        -nosound
+        -carla-server
+        -world-port=2000
+        -quality-level=${CARLA_QUALITY:-Epic}
+      "
+    ports:
+      - "2000:2000"   # CARLA primary port
+      - "2001:2001"   # CARLA secondary (traffic manager)
+      - "8080:8080"   # optional web viewer
+    volumes:
+      - carla-logs:/tmp/CarlaLogs
+    networks:
+      - carla-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  # -------------------------------------------------------
+  # Python Client — data collection & counterfactual gen
+  # -------------------------------------------------------
+  client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      carla-server:
+        condition: service_healthy
+    environment:
+      - CARLA_HOST=carla-server
+      - CARLA_PORT=2000
+    command: >
+      --host carla-server
+      --port 2000
+      --phase ${RUN_PHASE:-all}
+      --num-train ${NUM_TRAIN:-10000}
+      --num-test  ${NUM_TEST:-2000}
+      --versions  ${NUM_VERSIONS:-10}
+    volumes:
+      - ../data:/app/data       # persist dataset on host
+    networks:
+      - carla-net
+    restart: "no"
+
+volumes:
+  carla-logs:
+
+networks:
+  carla-net:
+    driver: bridge
