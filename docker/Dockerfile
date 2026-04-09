@@ -24,6 +24,10 @@ RUN apt-get update \
         python3.7-distutils \
         libgl1-mesa-glx \
         libglib2.0-0 \
+        libxerces-c3.2 \
+        libpng16-16 \
+        libjpeg-turbo8 \
+        libtiff5 \
     && curl -sS https://bootstrap.pypa.io/pip/3.7/get-pip.py | python3.7 \
     && rm -rf /var/lib/apt/lists/*
 
