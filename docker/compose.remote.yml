@@ -24,9 +24,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - SDL_VIDEODRIVER=offscreen
-      - SDL_HINT_CUDA_DEVICE=0
-    command: /bin/bash -c "./CarlaUE4.sh -opengl -RenderOffScreen -nosound -carla-server -world-port=2000 -quality-level=${CARLA_QUALITY:-Epic}"
+    command: /bin/bash -c "./CarlaUE4.sh -nullrhi -nosound -carla-server -world-port=2000 -quality-level=Low"
     ports:
       - "2000:2000"   # CARLA primary port
       - "2001:2001"   # CARLA secondary (traffic manager)
@@ -35,7 +33,7 @@ services:
       - carla-logs:/tmp/CarlaLogs
     networks:
       - carla-net
-    restart: unless-stopped
+    restart: "no"
     healthcheck:
       test: ["CMD-SHELL", "python3 -c 'import socket; s=socket.socket(); s.settimeout(2); s.connect((\"localhost\",2000)); s.close()' 2>/dev/null"]
       interval: 15s
@@ -65,6 +63,7 @@ services:
       --versions  ${NUM_VERSIONS:-10}
     volumes:
       - ../data:/app/data       # persist dataset on host
+      - /var/run/docker.sock:/var/run/docker.sock  # メモリ超過時にサーバーコンテナを停止するため
     networks:
       - carla-net
     restart: "no"

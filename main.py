@@ -14,6 +14,7 @@ import glob
 from typing import Tuple
 
 from src import config
+from src.memory_guard import check_memory, MemoryLimitExceeded
 from src.phase1_collect import FactualCollector
 from src.phase2_counterfactual import CounterfactualGenerator
 from src.visualize import visualize_batch, compare_factual_counterfactual
@@ -74,6 +75,11 @@ def run_phase1(client: carla.Client, world: carla.World, args) -> None:
         # Collect training samples
         for i in range(args.num_train):
             try:
+                check_memory()
+            except MemoryLimitExceeded as e:
+                logging.error(f"メモリ制限超過のため停止: {e}")
+                break
+            try:
                 scenario_id = f"train_{i:05d}"
                 result = collector.collect_scenario(scenario_id, split="train")
                 collected_scenarios.append(result)
@@ -84,6 +90,11 @@ def run_phase1(client: carla.Client, world: carla.World, args) -> None:
 
         # Collect test samples
         for i in range(args.num_test):
+            try:
+                check_memory()
+            except MemoryLimitExceeded as e:
+                logging.error(f"メモリ制限超過のため停止: {e}")
+                break
             try:
                 scenario_id = f"test_{i:05d}"
                 result = collector.collect_scenario(scenario_id, split="test")
@@ -152,6 +163,11 @@ def run_phase2(client: carla.Client, world: carla.World, args) -> None:
             logging.info(f"\n--- Version {version}/{args.versions} ---")
 
             for scenario_idx, log_path in enumerate(factual_files):
+                try:
+                    check_memory()
+                except MemoryLimitExceeded as e:
+                    logging.error(f"メモリ制限超過のため停止: {e}")
+                    break
                 try:
                     scenario_filename = os.path.basename(log_path)
                     scenario_id = os.path.splitext(scenario_filename)[0]
