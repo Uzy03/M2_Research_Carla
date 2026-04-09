@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup env \
+.PHONY: help init init-local data-dirs setup env \
         build-remote build-local \
         up down logs shell \
         phase1 phase2 phase3 run \
@@ -31,8 +31,10 @@ help:
 	@echo ""
 	@echo "  CARLA Counterfactual Dataset Framework"
 	@echo ""
-	@echo "  セットアップ"
-	@echo "    make setup           .env を作成して依存ライブラリをインストール"
+	@echo "  セットアップ（初回）"
+	@echo "    make init            .env作成 + data/ディレクトリ作成 + Dockerビルド（リモートLinux用）"
+	@echo "    make init-local      同上（ローカル開発用）"
+	@echo "    make setup           .env を作成して依存ライブラリをインストール（pip）"
 	@echo "    make env             .env.example → .env をコピー（既存は上書きしない）"
 	@echo ""
 	@echo "  リモートサーバーへの同期"
@@ -67,6 +69,17 @@ help:
 	@echo "    make phase1 NUM_TRAIN=500 NUM_TEST=100"
 	@echo "    make run    CARLA_HOST=192.168.1.10"
 	@echo ""
+
+# ── 初回セットアップ ─────────────────────────────────────
+init: env data-dirs build-remote
+	@echo "✅ 初回セットアップ完了（リモートLinux用）"
+	@echo "   .env を編集して REMOTE_HOST などを設定してください。"
+
+init-local: env data-dirs build-local
+	@echo "✅ 初回セットアップ完了（ローカル開発用）"
+
+data-dirs:
+	mkdir -p data/factual data/counterfactual data/renders data/viz
 
 # ── セットアップ ─────────────────────────────────────────
 env:
