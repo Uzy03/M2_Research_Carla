@@ -1,37 +1,44 @@
 # CARLA Counterfactual Framework — Python Client
-# h5py の PyPI wheel は HDF5 を内包しているので libhdf5-dev は不要。
-# matplotlib/mplsoccer の描画バックエンド用に libgl1 のみ必要。
+# CARLA 0.9.10 は Ubuntu 18.04 向けビルドのため、同じベースイメージを使用。
 
 # Stage 1: CARLA Python API (egg) を公式イメージから取得
 FROM carlasim/carla:0.9.10 AS carla-source
 
-# Stage 2: Python client
-FROM python:3.7-slim
+# Stage 2: Python client (Ubuntu 18.04 ベース)
+FROM ubuntu:18.04
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgl1 \
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Python 3.7 + 必要なシステムライブラリのインストール
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        software-properties-common \
+        curl \
+        ca-certificates \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python3.7 \
+        python3.7-distutils \
+        libgl1-mesa-glx \
         libglib2.0-0 \
-        libxerces-c3.2 \
-        libpng16-16 \
-        libjpeg62-turbo \
-        binutils \
-    && ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so.62 /usr/lib/x86_64-linux-gnu/libjpeg.so.8 \
+    && curl -sS https://bootstrap.pypa.io/pip/3.7/get-pip.py | python3.7 \
     && rm -rf /var/lib/apt/lists/*
 
-# CARLA 0.9.10 Python API egg を site-packages に追加
-COPY --from=carla-source /home/carla/PythonAPI/carla/dist/ /tmp/carla_dist/
-RUN SITE=$(python -c "import site; print(site.getsitepackages()[0])") && \
-    EGG=$(ls /tmp/carla_dist/*.egg 2>/dev/null | head -1) && \
-    cp "$EGG" "$SITE/" && \
-    echo "$(basename $EGG)" > "$SITE/carla.pth" && \
-    rm -rf /tmp/carla_dist
+# python / pip を python3.7 に向ける
+RUN ln -sf /usr/bin/python3.7 /usr/local/bin/python3 \
+    && ln -sf /usr/bin/python3.7 /usr/local/bin/python
 
-# 不足ライブラリを一覧表示してから import 確認
-RUN find /usr/local/lib/python3.7/site-packages/carla-0.9.10-py3.7-linux-x86_64.egg -name "*.so" \
-      -exec ldd {} \; 2>/dev/null | grep "not found" | sort -u && \
-    python -c "import carla; print('carla import OK')"
+# CARLA 0.9.10 Python API egg を site-packages へ
+COPY --from=carla-source /home/carla/PythonAPI/carla/dist/ /tmp/carla_dist/
+RUN SITE=$(python -c "import site; print(site.getsitepackages()[0])") \
+    && EGG=$(ls /tmp/carla_dist/*.egg 2>/dev/null | head -1) \
+    && cp "$EGG" "$SITE/" \
+    && echo "$(basename "$EGG")" > "$SITE/carla.pth" \
+    && rm -rf /tmp/carla_dist \
+    && python -c "import carla; print('carla import OK')"
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
