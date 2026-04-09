@@ -11,6 +11,7 @@ import os
 import sys
 from pathlib import Path
 import glob
+from typing import Tuple
 
 from src import config
 from src.phase1_collect import FactualCollector
@@ -18,7 +19,7 @@ from src.phase2_counterfactual import CounterfactualGenerator
 from src.visualize import visualize_batch, compare_factual_counterfactual
 
 
-def connect_carla() -> tuple[carla.Client, carla.World]:
+def connect_carla() -> Tuple[carla.Client, carla.World]:
     """
     Connect to CARLA server and configure world settings.
 
