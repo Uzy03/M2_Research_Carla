@@ -13,6 +13,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgl1 \
         libglib2.0-0 \
+        libxerces-c3.2 \
     && rm -rf /var/lib/apt/lists/*
 
 # CARLA 0.9.10 Python API egg を site-packages に追加
