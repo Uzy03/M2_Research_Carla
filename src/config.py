@@ -20,7 +20,7 @@ NUM_COUNTERFACTUAL_VERSIONS = 10
 # --- Phase 1: Factual Collection ---
 SCENARIO_DURATION_STEPS = 400       # 20 seconds at 20 FPS
 NUM_NPC_VEHICLES = 20
-NUM_NPC_WALKERS = 10
+NUM_NPC_WALKERS = 0  # CARLA 0.9.10 同期モードでAI Walkerがクラッシュするため無効化
 QUICK_VISUALIZE_COUNT = 10          # First N samples to visualize
 
 # --- Phase 2: Counterfactual Intervention ---
